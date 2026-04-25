@@ -6,15 +6,22 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "roles")
+@Table(name = "zonas")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Rol {
+public class Zona {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
-    @Column(nullable = false, unique = true)
-    private String name;
-    private String description;
+    private Long id;
+
+    @Column(nullable = false, length = 50)
+    private String nombre;
+
+    private Integer capacidad;
+
+    @Column(length = 150)
+    private String descripcion;
+
+    private boolean activa = true;
 }
