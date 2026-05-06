@@ -2,46 +2,47 @@ package com.dolusa.backend.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import java.math.BigDecimal;
+import lombok.Setter;
+
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Entity
-@Table(name = "eventos")
-@Data
+@Table(name = "evento")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Evento {
+    public enum EstadoEvento {programado, activo, finalizado, cancelado}
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id_evento")
+    private Integer idEvento;
 
-    @Column(nullable = false, length = 120)
+    @Column(nullable = false, length = 150)
     private String nombre;
+
+    @Column(nullable = false)
+    private LocalDate fecha;
+
+    @Column(name = "hora_inicio", nullable = false)
+    private LocalTime horaInicio;
+
+    @Column(name = "hora_fin", nullable = false)
+    private LocalTime horaFin;
 
     @Column(columnDefinition = "TEXT")
     private String descripcion;
 
-    @Column(name = "fecha_evento", nullable = false)
-    private LocalDate fechaEvento;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EstadoEvento estado;
 
-    @Column(name = "hora_inicio")
-    private LocalTime horaInicio;
-
-    @Column(name = "hora_fin")
-    private LocalTime horaFin;
-
-    @Column(name = "precio_cover", precision = 10, scale = 2)
-    private BigDecimal precioCover;
-
-    @Column(name = "aforo_maximo")
-    private Integer aforoMaximo;
-
-    private boolean activo = true;
-
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(name = "creado_en", nullable = false)
+    private LocalDateTime creadoEn;
 }

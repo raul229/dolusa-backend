@@ -2,44 +2,50 @@ package com.dolusa.backend.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import java.math.BigDecimal;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "reservas")
-@Data
+@Table(name = "reserva")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Reserva {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id_reserva")
+    private Integer idReserva;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "id_usuario")
-    private Usuario usuario;
+    @JoinColumn(name = "id_cliente", nullable = false)
+    private Cliente cliente;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "id_mesa")
-    private Mesa mesa;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "id_evento")
+    @JoinColumn(name = "id_evento", nullable = false)
     private Evento evento;
 
-    @Column(name = "num_personas")
-    private Integer numPersonas;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_area", nullable = false)
+    private Area area;
 
-    private String estado;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_estado", nullable = false)
+    private EstadoReserva estado;
 
-    @Column(name = "total_pago", precision = 10, scale = 2)
-    private BigDecimal totalPago;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_usuario", nullable = false)
+    private UsuarioSistema usuario;
 
-    @Column(length = 255)
-    private String notas;
+    @Column(name = "cantidad_personas", nullable = false)
+    private Short cantidadPersonas;
 
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(length = 300)
+    private String observacion;
+
+    @Column(name = "creado_en", nullable = false)
+    private LocalDateTime creadoEn;
 }

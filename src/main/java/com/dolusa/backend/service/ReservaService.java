@@ -5,46 +5,102 @@ import com.dolusa.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.math.BigDecimal;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ReservaService {
     private final ReservaRepository reservaRepository;
-    private final MesaRepository mesaRepository;
+    private final EstadoReservaRepository estadoReservaRepository;
+    private final HistorialReservaRepository historialReservaRepository;
+
+    private final ClienteRepository clienteRepository;
     private final EventoRepository eventoRepository;
-    private final UsuarioRepository usuarioRepository;
+    private final AreaRepository areaRepository;
+    private final UsuarioSistemaRepository usuarioSistemaRepository;
 
-    @Transactional
-    public Reserva crearReserva(Reserva reserva) {
-        // 1. Validar Usuario activo
-        Usuario usuario = usuarioRepository.findById(reserva.getUsuario().getId())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        if (!usuario.isActivo()) throw new RuntimeException("Usuario inactivo");
-
-        // 2. Validar Evento activo y Aforo
-        Evento evento = eventoRepository.findById(reserva.getEvento().getId())
-                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
-        if (!evento.isActivo()) throw new RuntimeException("Evento no disponible");
-
-        // 3. Validar Disponibilidad de Mesa (Lógica simplificada)
-        // En la vida real, aquí buscaríamos si la mesa tiene otra reserva el mismo día/hora
-        Mesa mesa = mesaRepository.findById(reserva.getMesa().getId())
-                .orElseThrow(() -> new RuntimeException("Mesa no encontrada"));
-        
-        if ("OCUPADO".equalsIgnoreCase(mesa.getEstado())) {
-            throw new RuntimeException("La mesa ya está marcada como ocupada");
-        }
-
-        // 4. Calcular total automáticamente basado en el cover del evento y num personas
-        BigDecimal total = evento.getPrecioCover().multiply(BigDecimal.valueOf(reserva.getNumPersonas()));
-        reserva.setTotalPago(total);
-
-        return reservaRepository.save(reserva);
+    public List<Reserva> listar() {
+        return reservaRepository.findAllByOrderByCreadoEnDesc();
     }
 
-    public List<Reserva> listarReservas() {
-        return reservaRepository.findAll();
+    public List<Reserva> listarPorEvento(Integer idEvento) {
+        return reservaRepository.findByEvento_IdEventoOrderByCreadoEnDesc(idEvento);
+    }
+
+    public Reserva obtener(Integer idReserva) {
+        return reservaRepository.findById(idReserva).orElse(null);
+    }
+
+    @Transactional
+    public Integer crear(Reserva input) {
+        // Load required refs to ensure FK integrity
+        Cliente cliente = clienteRepository.findById(input.getCliente().getIdCliente())
+                .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado"));
+        Evento evento = eventoRepository.findById(input.getEvento().getIdEvento())
+                .orElseThrow(() -> new IllegalArgumentException("Evento no encontrado"));
+        Area area = areaRepository.findById(input.getArea().getIdArea())
+                .orElseThrow(() -> new IllegalArgumentException("Area no encontrada"));
+        UsuarioSistema usuario = usuarioSistemaRepository.findById(input.getUsuario().getIdUsuario())
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+        EstadoReserva pendiente = estadoReservaRepository.findByNombre("pendiente")
+                .orElseThrow(() -> new IllegalStateException("Estado 'pendiente' no existe"));
+
+        Reserva r = new Reserva();
+        r.setCliente(cliente);
+        r.setEvento(evento);
+        r.setArea(area);
+        r.setUsuario(usuario);
+        r.setEstado(pendiente);
+        r.setCantidadPersonas(input.getCantidadPersonas() == null ? (short) 1 : input.getCantidadPersonas());
+        r.setObservacion(input.getObservacion());
+        r.setCreadoEn(LocalDateTime.now());
+
+        Reserva saved = reservaRepository.save(r);
+
+        // Audit initial state
+        HistorialReserva h = new HistorialReserva();
+        h.setReserva(saved);
+        h.setEstadoAnterior(null);
+        h.setEstadoNuevo(pendiente);
+        h.setUsuario(usuario);
+        h.setFechaCambio(LocalDateTime.now());
+        h.setNota("Estado inicial");
+        historialReservaRepository.save(h);
+
+        return saved.getIdReserva();
+    }
+
+    @Transactional
+    public boolean cambiarEstado(Integer idReserva, Integer idEstadoNuevo) {
+        Reserva r = reservaRepository.findById(idReserva).orElse(null);
+        if (r == null) return false;
+
+        EstadoReserva nuevo = estadoReservaRepository.findById(idEstadoNuevo)
+                .orElseThrow(() -> new IllegalArgumentException("Estado no encontrado"));
+
+        EstadoReserva anterior = r.getEstado();
+        r.setEstado(nuevo);
+        reservaRepository.save(r);
+
+        HistorialReserva h = new HistorialReserva();
+        h.setReserva(r);
+        h.setEstadoAnterior(anterior);
+        h.setEstadoNuevo(nuevo);
+        h.setUsuario(r.getUsuario());
+        h.setFechaCambio(LocalDateTime.now());
+        h.setNota("Cambio de estado via API");
+        historialReservaRepository.save(h);
+
+        return true;
+    }
+
+    @Transactional
+    public boolean eliminar(Integer idReserva) {
+        if (!reservaRepository.existsById(idReserva)) return false;
+        reservaRepository.deleteById(idReserva);
+        return true;
     }
 }
