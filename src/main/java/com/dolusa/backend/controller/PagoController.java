@@ -1,16 +1,16 @@
 package com.dolusa.backend.controller;
 
 import com.dolusa.backend.controller.dto.PagoCreateRequest;
+import com.dolusa.backend.controller.dto.PagoEstadoUpdateRequest;
 import com.dolusa.backend.model.Pago;
 import com.dolusa.backend.service.PagoService;
+import com.dolusa.backend.service.ReporteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -18,6 +18,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PagoController {
     private final PagoService pagoService;
+    private final ReporteService reporteService;
 
     @PostMapping
     public ResponseEntity<Map<String, Object>> registrar(@Valid @RequestBody PagoCreateRequest req) {
@@ -25,20 +26,26 @@ public class PagoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id_pago", idPago));
     }
 
-    @GetMapping("/reserva/{idReserva}")
+    // PDF: GET /api/pagos/{id_reserva}
+    @GetMapping("/{idReserva}")
     public ResponseEntity<Pago> obtenerPorReserva(@PathVariable Integer idReserva) {
         Pago p = pagoService.obtenerPorReserva(idReserva);
         return p == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(p);
     }
 
-    @GetMapping("/evento/{idEvento}/recaudacion")
-    public ResponseEntity<Map<String, Object>> recaudacionPorEvento(@PathVariable Integer idEvento) {
-        BigDecimal total = pagoService.recaudacionPorEvento(idEvento);
-        return ResponseEntity.ok(Map.of("total", total));
+    // PDF: PUT /api/pagos/{id}/estado
+    @PutMapping("/{id}/estado")
+    public ResponseEntity<Map<String, Object>> actualizarEstado(
+            @PathVariable Integer id,
+            @Valid @RequestBody PagoEstadoUpdateRequest body
+    ) {
+        boolean ok = pagoService.actualizarEstado(id, body.getEstadoPago());
+        return ResponseEntity.ok(Map.of("actualizado", ok));
     }
 
-    @GetMapping("/evento/{idEvento}/resumen-metodo")
-    public ResponseEntity<List<Object[]>> resumenPorMetodo(@PathVariable Integer idEvento) {
-        return ResponseEntity.ok(pagoService.resumenPorMetodo(idEvento));
+    // PDF: GET /api/pagos/recaudacion?evento={id}
+    @GetMapping("/recaudacion")
+    public ResponseEntity<Map<String, Object>> recaudacion(@RequestParam("evento") Integer idEvento) {
+        return ResponseEntity.ok(reporteService.recaudacionPorEvento(idEvento));
     }
 }

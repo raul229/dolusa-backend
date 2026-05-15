@@ -12,6 +12,14 @@ public interface PagoRepository extends JpaRepository<Pago, Integer> {
     Optional<Pago> findByReserva_IdReserva(Integer idReserva);
 
     @Query("""
+        SELECT COUNT(p)
+        FROM Pago p
+        WHERE p.reserva.evento.idEvento = :idEvento
+          AND p.estadoPago = com.dolusa.backend.model.Pago.EstadoPago.completado
+        """)
+    long cantidadPagosCompletadosPorEvento(@Param("idEvento") Integer idEvento);
+
+    @Query("""
         SELECT COALESCE(SUM(p.monto), 0)
         FROM Pago p
         WHERE p.reserva.evento.idEvento = :idEvento
@@ -27,4 +35,13 @@ public interface PagoRepository extends JpaRepository<Pago, Integer> {
         GROUP BY p.metodo.nombre
         """)
     List<Object[]> resumenPorMetodo(@Param("idEvento") Integer idEvento);
+
+    @Query("""
+        SELECT p.reserva.area.nombre, COUNT(p), COALESCE(SUM(p.monto), 0)
+        FROM Pago p
+        WHERE p.reserva.evento.idEvento = :idEvento
+          AND p.estadoPago = com.dolusa.backend.model.Pago.EstadoPago.completado
+        GROUP BY p.reserva.area.nombre
+        """)
+    List<Object[]> resumenPorArea(@Param("idEvento") Integer idEvento);
 }

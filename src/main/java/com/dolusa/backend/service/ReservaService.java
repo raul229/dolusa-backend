@@ -99,7 +99,14 @@ public class ReservaService {
 
     @Transactional
     public boolean eliminar(Integer idReserva) {
-        if (!reservaRepository.existsById(idReserva)) return false;
+        Reserva r = reservaRepository.findById(idReserva).orElse(null);
+        if (r == null) return false;
+        if (r.getEstado() == null || r.getEstado().getNombre() == null) {
+            throw new IllegalStateException("Estado de reserva invalido");
+        }
+        if (!"pendiente".equalsIgnoreCase(r.getEstado().getNombre())) {
+            throw new IllegalStateException("Solo se puede eliminar una reserva pendiente");
+        }
         reservaRepository.deleteById(idReserva);
         return true;
     }

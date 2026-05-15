@@ -61,6 +61,15 @@ public class PagoService {
         return pagoRepository.resumenPorMetodo(idEvento);
     }
 
+    @Transactional
+    public boolean actualizarEstado(Integer idPago, Pago.EstadoPago estado) {
+        Pago p = pagoRepository.findById(idPago).orElse(null);
+        if (p == null) return false;
+        p.setEstadoPago(estado);
+        pagoRepository.save(p);
+        return true;
+    }
+
     private String generarComprobante() {
         // Better uniqueness than currentTimeMillis
         return "DOL-" + UUID.randomUUID();
