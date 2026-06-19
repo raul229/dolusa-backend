@@ -29,7 +29,7 @@ public class Cliente {
     @Column(nullable = false, unique = true, length = 8)
     private String dni;
 
-    @Column(nullable = false, length = 15)
+    @Column(nullable = false, length = 9)
     private String celular;
 
     @Column(length = 150)

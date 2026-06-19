@@ -5,12 +5,11 @@ import com.dolusa.backend.model.UsuarioSistema;
 import com.dolusa.backend.service.UsuarioService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -73,32 +72,5 @@ public class UsuarioController {
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
         }
-    }
-
-    @PreAuthorize("hasRole('admin')")
-    @PutMapping("/{id}")
-    public ResponseEntity<?> actualizar(@PathVariable Integer id, @Valid @RequestBody UsuarioUpdateRequest req) {
-        try {
-            UsuarioSistema existing = usuarioService.findById(id);
-            if (existing == null) return ResponseEntity.notFound().build();
-            existing.setNombre(req.nombre());
-            existing.setUsuario(req.usuario());
-            if (req.password() != null && !req.password().isBlank()) existing.setPassword(req.password());
-            existing.setRol(UsuarioSistema.RolUsuario.valueOf(req.rol()));
-            existing.setActivo(req.activo());
-            UsuarioSistema saved = usuarioService.updateUsuario(existing);
-            saved.setPassword(null);
-            return ResponseEntity.ok(saved);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
-        }
-    }
-
-    @PreAuthorize("hasRole('admin')")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminar(@PathVariable Integer id) {
-        boolean ok = usuarioService.deleteUsuario(id);
-        if (!ok) return ResponseEntity.notFound().build();
-        return ResponseEntity.ok().build();
     }
 }

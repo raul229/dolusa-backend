@@ -5,19 +5,19 @@ import com.dolusa.backend.security.dto.LoginRequest;
 import com.dolusa.backend.security.dto.LoginResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/auth")
@@ -48,7 +48,7 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<?> me(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(401).body(Map.of("error", "No autenticado"));
         }
         Map<String, Object> out = new HashMap<>();
         out.put("usuario", authentication.getName());
@@ -56,13 +56,5 @@ public class AuthController {
                 .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
         out.put("roles", roles);
         return ResponseEntity.ok(out);
-    }
-
-    @GetMapping("/me")
-    public ResponseEntity<?> me(org.springframework.security.core.Authentication authentication) {
-        if (authentication == null) return ResponseEntity.status(401).build();
-        String username = authentication.getName();
-        java.util.List<String> roles = authentication.getAuthorities().stream().map(a -> a.getAuthority()).toList();
-        return ResponseEntity.ok(java.util.Map.of("usuario", username, "roles", roles));
     }
 }
